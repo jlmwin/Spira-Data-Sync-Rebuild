@@ -2380,6 +2380,7 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
 
                 //**** Next lets load in the project and user mappings ****
                 bool success = spiraImportExport.Connection_Authenticate2(internalLogin, internalPassword, DATA_SYNC_NAME);
+
                 if (!success)
                 {
                     //We can't authenticate so end
@@ -2533,12 +2534,17 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                         RemoteIncident[] incidentBatch = spiraImportExport.Incident_Retrieve(filters.ToArray(), sort, startRow, Constants.INCIDENT_PAGE_SIZE_SPIRA);
 
                         LogTraceEvent("Method: Incident_Retrieve, Count: " + incidentBatch.Count(), EventLogEntryType.Information);
-
+                        
                         foreach (var item in incidentBatch)
                         {
-                            //WINDSTREAM: This is and AND condition
+                            //WINDSTREAM: This is and AND condition Rows 2542 thru 2547 modified by Windstream
                             //WINSTREAM: First Condition: Checks Jira Sync Flag (custom #29) for "Y" to indication the incident should go to JIRA
                             //WINDSTREAM: Second Condition: Checking to make sure incident has not previously synced to JIRA
+                            int valueId = item.CustomProperties.Where(i => i.Definition.Name.Equals("JIRA Sync Flag")).FirstOrDefault().IntegerValue.GetValueOrDefault();
+                            string jiraSyncFlag = item.CustomProperties.Where(i => i.Definition.Name.Equals("JIRA Sync Flag")).FirstOrDefault().Definition.CustomList.Values.Where(c => c.CustomPropertyValueId.Equals(valueId)).FirstOrDefault().Name;
+
+                            LogErrorEvent("Incident: " + item.IncidentId + "ValueId: " + valueId + "JIRA Sync Flag: " + jiraSyncFlag);
+
                             if (item.CustomProperties.GetValue(29).ToString().Equals("Y", StringComparison.CurrentCultureIgnoreCase) && !incidentMappings.Any(i => i.InternalId.Equals(item.IncidentId.Value)))
                             {
                                 incidentList.Add(item);
@@ -2546,9 +2552,8 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                             }
                         }
 
-                        //var newIncidents = incidentBatch.Where(i => incidentMappings.Select(s => s.InternalId).Contains(i.IncidentId.Value));
-                        //incidentList.AddRange(newIncidents);
                     }
+
                     LogTraceEvent(eventLog, "Found " + incidentList.Count + " new incidents in " + productName, EventLogEntryType.Information);
 
                     //Create the mapping collections to hold any new items that need to get added to the mappings
@@ -2562,9 +2567,13 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                     {
                         try
                         {
+                            //int valueId = remoteIncident.CustomProperties.Where(i => i.Definition.Name.Equals("JIRA Sync Flag")).FirstOrDefault().IntegerValue.GetValueOrDefault();
+                            //string jiraSyncFlag = remoteIncident.CustomProperties.Where(i => i.Definition.Name.Equals("JIRA Sync Flag")).FirstOrDefault().Definition.CustomList.Values.Where(c => c.CustomPropertyValueId.Equals(valueId)).FirstOrDefault().Name;
+
                             //Make sure we have access to this JIRA project
-                            //WINDSTREAM: Change value of JIRA Project ID to be the value in Custom Property #30 on the specific incident.
+                            //WINDSTREAM: Change value of JIRA Project ID to be the value in Custom Property #30 on the specific incident.  Row 2567 modified by Windstream
                             JiraProject customJiraProject = jiraProjects.FirstOrDefault(j => j.Key == remoteIncident.CustomProperties.GetValue(30).ToString());
+
                             if (customJiraProject == null)
                             {
                                 //We can't connect so go to next project
