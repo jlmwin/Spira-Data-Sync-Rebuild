@@ -140,7 +140,7 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                 if (!String.IsNullOrWhiteSpace(custom04))
                 {
                     string[] reqIssueTypes = custom04.Split(',');
-                    foreach(string reqIssueType in reqIssueTypes)
+                    foreach (string reqIssueType in reqIssueTypes)
                     {
                         int reqIssueTypeInt;
                         if (Int32.TryParse(reqIssueType, out reqIssueTypeInt))
@@ -213,7 +213,7 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
         /// <param name="ignoreComponentCustomProperty">Should we ignore the Component custom property mappings - usually because the new standard field was mapped instead</param>
         private List<JiraCustomFieldValue> ProcessJiraIssueCustomFields(int projectId, string productName, JiraIssue jiraIssue, RemoteCustomProperty[] customProperties, Dictionary<int, RemoteDataMapping> customPropertyMappingList, RemoteDataMapping[] userMappings, SpiraSoapService.SoapServiceClient spiraSoapService, Dictionary<int, RemoteDataMapping[]> customPropertyValueMappingList, RemoteArtifact remoteArtifact, bool ignoreComponentCustomProperty)
         {
-            List<JiraCustomFieldValue>  jiraCustomFieldValues = jiraIssue.CustomFieldValues;
+            List<JiraCustomFieldValue> jiraCustomFieldValues = jiraIssue.CustomFieldValues;
             foreach (SpiraSoapService.RemoteCustomProperty customProperty in customProperties)
             {
                 //Get the external key of this custom property
@@ -701,7 +701,7 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                     List<SpiraSoapService.RemoteComment> newIncidentComments = new List<SpiraSoapService.RemoteComment>();
                     if (jiraComments != null && jiraComments.Count > 0)
                     {
-                        foreach(JiraComment jiraComment in jiraComments)
+                        foreach (JiraComment jiraComment in jiraComments)
                         {
                             //Add the author, date and body to the resolution
                             //See if we already have this resolution inside SpiraTest
@@ -1323,7 +1323,7 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                         }
                     }
 
-                     //Specify the release if applicable. We use the affects version unless there is a fix-version
+                    //Specify the release if applicable. We use the affects version unless there is a fix-version
                     if ((jiraIssue.Fields.FixVersions != null && jiraIssue.Fields.FixVersions.Count > 0)
                         || (jiraIssue.Fields.Versions != null && jiraIssue.Fields.Versions.Count > 0))
                     {
@@ -2373,14 +2373,13 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                 ServicePointManager.ServerCertificateValidationCallback += new RemoteCertificateValidationCallback(Certificates.ValidateRemoteCertificate);
 
                 //Instantiate the JIRA web service proxy class
-                JiraClient.JiraManager jiraManager = new JiraClient.JiraManager(this.connectionString, this.externalLogin, this.externalPassword, this.eventLog, this.traceLogging);                
+                JiraClient.JiraManager jiraManager = new JiraClient.JiraManager(this.connectionString, this.externalLogin, this.externalPassword, this.eventLog, this.traceLogging);
 
                 //First lets get the product name we should be referring to
                 string productName = spiraImportExport.System_GetProductName();
 
                 //**** Next lets load in the project and user mappings ****
                 bool success = spiraImportExport.Connection_Authenticate2(internalLogin, internalPassword, DATA_SYNC_NAME);
-
                 if (!success)
                 {
                     //We can't authenticate so end
@@ -2513,7 +2512,7 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                     //Now get the list of releases and incidents that have already been mapped
                     SpiraSoapService.RemoteDataMapping[] incidentMappings = spiraImportExport.DataMapping_RetrieveArtifactMappings(dataSyncSystemId, (int)Constants.ArtifactType.Incident);
                     SpiraSoapService.RemoteDataMapping[] releaseMappings = spiraImportExport.DataMapping_RetrieveArtifactMappings(dataSyncSystemId, (int)Constants.ArtifactType.Release);
-                    
+
                     //If we don't have a last-sync data, default to 1/1/1950
                     if (!lastSyncDate.HasValue)
                     {
@@ -2529,22 +2528,17 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                         //incidentList.AddRange(incidentBatch);
 
                         var filters = new List<RemoteFilter>();
-                        var sort = new RemoteSort() { PropertyName = "Name", SortAscending = true  };
+                        var sort = new RemoteSort() { PropertyName = "Name", SortAscending = true };
 
                         RemoteIncident[] incidentBatch = spiraImportExport.Incident_Retrieve(filters.ToArray(), sort, startRow, Constants.INCIDENT_PAGE_SIZE_SPIRA);
 
                         LogTraceEvent("Method: Incident_Retrieve, Count: " + incidentBatch.Count(), EventLogEntryType.Information);
-                        
+
                         foreach (var item in incidentBatch)
                         {
-                            //WINDSTREAM: This is and AND condition Rows 2542 thru 2547 modified by Windstream
+                            //WINDSTREAM: This is and AND condition
                             //WINSTREAM: First Condition: Checks Jira Sync Flag (custom #29) for "Y" to indication the incident should go to JIRA
                             //WINDSTREAM: Second Condition: Checking to make sure incident has not previously synced to JIRA
-                            int valueId = item.CustomProperties.Where(i => i.Definition.Name.Equals("JIRA Sync Flag")).FirstOrDefault().IntegerValue.GetValueOrDefault();
-                            string jiraSyncFlag = item.CustomProperties.Where(i => i.Definition.Name.Equals("JIRA Sync Flag")).FirstOrDefault().Definition.CustomList.Values.Where(c => c.CustomPropertyValueId.Equals(valueId)).FirstOrDefault().Name;
-
-                            LogErrorEvent("Incident: " + item.IncidentId + "ValueId: " + valueId + "JIRA Sync Flag: " + jiraSyncFlag);
-
                             if (item.CustomProperties.GetValue(29).ToString().Equals("Y", StringComparison.CurrentCultureIgnoreCase) && !incidentMappings.Any(i => i.InternalId.Equals(item.IncidentId.Value)))
                             {
                                 incidentList.Add(item);
@@ -2552,8 +2546,9 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                             }
                         }
 
+                        //var newIncidents = incidentBatch.Where(i => incidentMappings.Select(s => s.InternalId).Contains(i.IncidentId.Value));
+                        //incidentList.AddRange(newIncidents);
                     }
-
                     LogTraceEvent(eventLog, "Found " + incidentList.Count + " new incidents in " + productName, EventLogEntryType.Information);
 
                     //Create the mapping collections to hold any new items that need to get added to the mappings
@@ -2567,13 +2562,9 @@ namespace Inflectra.SpiraTest.PlugIns.Jira5DataSync
                     {
                         try
                         {
-                            //int valueId = remoteIncident.CustomProperties.Where(i => i.Definition.Name.Equals("JIRA Sync Flag")).FirstOrDefault().IntegerValue.GetValueOrDefault();
-                            //string jiraSyncFlag = remoteIncident.CustomProperties.Where(i => i.Definition.Name.Equals("JIRA Sync Flag")).FirstOrDefault().Definition.CustomList.Values.Where(c => c.CustomPropertyValueId.Equals(valueId)).FirstOrDefault().Name;
-
                             //Make sure we have access to this JIRA project
-                            //WINDSTREAM: Change value of JIRA Project ID to be the value in Custom Property #30 on the specific incident.  Row 2567 modified by Windstream
+                            //WINDSTREAM: Change value of JIRA Project ID to be the value in Custom Property #30 on the specific incident.
                             JiraProject customJiraProject = jiraProjects.FirstOrDefault(j => j.Key == remoteIncident.CustomProperties.GetValue(30).ToString());
-
                             if (customJiraProject == null)
                             {
                                 //We can't connect so go to next project
